@@ -35,7 +35,7 @@ namespace edupt
 
 		// OpenMP
 		omp_set_num_threads(12);
-		#pragma omp parallel for schedule(static) /*num_threads(16)*/
+		#pragma omp parallel for schedule(static)
 		for (int y = 0; y < height; y ++)
 		{
 			std::cerr << "Rendering (y = " << y << ") " << (100.0 * y / (height - 1)) << "%" << std::endl;
