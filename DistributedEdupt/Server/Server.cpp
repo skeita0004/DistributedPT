@@ -15,6 +15,14 @@ struct ClientInfo
     std::string ip;
 };
 
+enum State
+{
+    NONE,
+    QUOTA,
+    COMPLETION,
+    STATE_MAX
+};
+
 // サーバー自身のIPアドレスを取得する関数
 void ShowServerIP() 
 {
@@ -36,6 +44,28 @@ void ShowServerIP()
             freeaddrinfo(res);
         }
     }
+}
+
+void DisplayMessage(const std::vector<ClientInfo>& clients)
+{
+    system("cls");
+    std::cout << "Server Waiting..." << std::endl;
+    ShowServerIP();
+    std::cout << "------------------" << std::endl;
+    
+    if (clients.empty())
+    {
+        std::cout << "クライアントを待っています..." << std::endl;
+    }
+    else
+    {
+        std::cout << "クライアントが接続しました:" << clients.size() << std::endl;
+        for (size_t i = 0; i < clients.size(); ++i)
+        {
+            std::cout << " [" << i << "] IPアドレス: " << clients[i].ip << std::endl;
+        }
+    }
+    std::cout << "Enterでクライアントの受付を終了..." << std::endl;
 }
 
 int main() {
@@ -70,32 +100,7 @@ int main() {
 
     std::vector<ClientInfo> connectedClients;
 
-    // 初回画面
-    auto DisplayStatus = [&]()
-        {
-            system("cls");
-            std::cout << "--------------------------------------" << std::endl;
-            std::cout << "   Rendering Server Mode: [WAITING]   " << std::endl;
-            ShowServerIP(); // サーバーのIPアドレスを表示
-            std::cout << "--------------------------------------" << std::endl;
-
-            if (connectedClients.empty())
-            {
-                std::cout << "\n [Status]クライアントの接続を待っています..." << std::endl;
-            }
-            else
-            {
-                std::cout << "\n Connected Clients: " << connectedClients.size() << std::endl;
-                std::cout << "   ------------------------------------------" << std::endl;
-                for (size_t i = 0; i < connectedClients.size(); ++i)
-                {
-                    std::cout << "    [" << i << "] IP: " << connectedClients[i].ip << std::endl;
-                }
-            }
-            std::cout << "\n   Press [Enter] to STOP accepting and START calculation..." << std::endl;
-        };
-
-    DisplayStatus();
+    DisplayMessage(connectedClients);
 
     // --- クライアント接続受付フェーズ ---
     while (true) 
@@ -112,7 +117,7 @@ int main() {
             ClientInfo info = { newSock, std::string(ipStr) };
             connectedClients.push_back(info);
 
-            DisplayStatus(); // 接続があったので表示更新
+            DisplayMessage(connectedClients); // 接続があったので表示更新
         }
 
         if (_kbhit()) 
@@ -123,9 +128,13 @@ int main() {
         Sleep(100);
     }
 
-    std::cout << "\n[System] 接続を締め切りました。計算フェーズに移行します。" << std::endl;
+    std::cout << "\n接続を締め切りました..." << std::endl;
+    std::cout << "計算フェーズへ移行します..." << std::endl;
 
-    // --- 後処理（実際はここで計算命令を送信する） ---
+    // データ送信するところ
+
+
+
     for (auto& c : connectedClients) closesocket(c.sock);
     closesocket(listenSock);
     WSACleanup();
