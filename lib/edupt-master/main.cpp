@@ -2,7 +2,7 @@
 
 #include "render.h"
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 	std::cout << "Path tracing renderer: edupt" << std::endl << std::endl;
 
