@@ -13,7 +13,9 @@ namespace edupt
 		Vec normal;
 		Vec position;
 
-		Hitpoint() : distance(kINF), normal(), position() {}
+		Hitpoint() : distance(kINF), normal(), position()
+		{
+		}
 	};
 
 	struct Intersection
@@ -21,7 +23,9 @@ namespace edupt
 		Hitpoint hitpoint;
 		int object_id;
 
-		Intersection() : object_id(-1) {}
+		Intersection() : object_id(-1)
+		{
+		}
 	};
 
 };
