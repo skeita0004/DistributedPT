@@ -12,7 +12,7 @@
 namespace edupt
 {
 	// この辺をいじっていく必要がある(齋藤より)
-	int render(const int width, const int height, const int samples, const int supersamples)
+	int render(const int width, const int height, const int tileX, const int tileY, const int samples, const int supersamples)
 	{
 		// カメラ位置
 		const Vec camera_position = Vec(50.0, 52.0, 220.0);
@@ -31,7 +31,7 @@ namespace edupt
 
 		Color* image = new Color[width * height];
 
-		std::cout << width << "x" << height << " " << samples * (supersamples * supersamples) << " spp" << std::endl;
+		//std::cout << width << "x" << height << " " << samples * (supersamples * supersamples) << " spp" << std::endl;
 
 		// OpenMP
 		omp_set_num_threads(12);
