@@ -55,17 +55,17 @@ void DisplayMessage(const std::vector<ClientInfo>& clients)
     
     if (clients.empty())
     {
-        std::cout << "クライアントを待っています..." << std::endl;
+        std::cout << "Waiting Client..." << std::endl;
     }
     else
     {
-        std::cout << "クライアントが接続しました:" << clients.size() << std::endl;
+        std::cout << "Client Connected:" << clients.size() << std::endl;
         for (size_t i = 0; i < clients.size(); ++i)
         {
-            std::cout << " [" << i << "] IPアドレス: " << clients[i].ip << std::endl;
+            std::cout << " [" << i << "] IP Address: " << clients[i].ip << std::endl;
         }
     }
-    std::cout << "Enterでクライアントの受付を終了..." << std::endl;
+    std::cout << "Press Enter to stop accepting client connections..." << std::endl;
 }
 
 int main() {
@@ -128,8 +128,8 @@ int main() {
         Sleep(100);
     }
 
-    std::cout << "\n接続を締め切りました..." << std::endl;
-    std::cout << "計算フェーズへ移行します..." << std::endl;
+    std::cout << "\nStop Accept!" << std::endl;
+    std::cout << "Transitioning to the calculation phase..." << std::endl;
 
     // データ送信するところ
 
