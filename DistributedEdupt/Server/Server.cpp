@@ -8,19 +8,31 @@
 #pragma comment(lib, "ws2_32.lib")
 
 const unsigned short SERVER_PORT = 8888;
-
-struct ClientInfo
-{
-    SOCKET sock;
-    std::string ip;
-};
+const int WIN_WIDTH = 800;
+const int WIN_HEIGHT = 600;
+const int LINE_STEP = 4;
 
 enum State
 {
-    NONE,
-    QUOTA,
-    COMPLETION,
+    STATE_NONE,
+    STATE_QUOTA,
+    STATE_COMPLETION,
     STATE_MAX
+};
+
+struct ClientInfo
+{
+	SOCKET sock;
+	std::string ip;
+};
+
+struct RenderTask
+{
+	int taskId;
+	int startY;
+	int endY;
+	State status;
+	std::string ip;
 };
 
 // サーバー自身のIPアドレスを取得する関数
@@ -131,9 +143,53 @@ int main() {
     std::cout << "\nStop Accept!" << std::endl;
     std::cout << "Transitioning to the calculation phase..." << std::endl;
 
-    // データ送信するところ
 
+	// タスクの初期化
+	std::vector<RenderTask> taskTable;
+	int Counter = 0;
+	for(int y = 0; y < WIN_HEIGHT; y += LINE_STEP)
+	{
+		RenderTask t;
+		t.taskId = Counter++;
+		t.startY = y;
+		t.endY = y + LINE_STEP;
+		t.status = STATE_NONE;
+		t.ip = "";
+		taskTable.push_back(t);
+	}
 
+	std::cout << "Total Tasks: " << taskTable.size() << " created." << std::endl;
+
+	// データ送信するところ
+	size_t clientIndex = 0;
+	for(auto& task : taskTable)
+	{
+		if(connectedClients.empty())
+		{
+			break;
+		}
+
+		ClientInfo& targetClient = connectedClients[clientIndex];
+
+		task.status = STATE_QUOTA;
+		task.ip = targetClient.ip;
+
+		struct SendPacket
+		{
+			int pTaskId;
+			int pStartY;
+			int pEndY;
+		}packet;
+
+		packet.pTaskId = htonl(task.taskId);
+		packet.pStartY = htonl(task.startY);
+		packet.pEndY = htonl(task.endY);
+
+		send(targetClient.sock,(char*)&packet,sizeof(packet),0);
+
+		std::cout << "[Assign] Task " << task.taskId << "(" << task.startY << " - " << task.endY
+				  << ") -> Client " << targetClient.ip << std::endl;
+	}
 
     for (auto& c : connectedClients) closesocket(c.sock);
     closesocket(listenSock);
