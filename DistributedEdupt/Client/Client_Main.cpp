@@ -8,24 +8,18 @@
 
 using namespace std;
 
-//サーバーと共通のタスク設定構造体
+// 通信用ピクセル構造体
+struct Pixel {
+	float r,g,b;
+};
+
+//struct（鯖と合わせるので変わるかも）
 struct RenderTask {
 	int taskId;
 	int startY,endY,width,height;
 };
 
-//通信用のピクセルデータ構造体
-struct Pixel {
-	float r,g,b;
-};
-
-//サーバーへの結果報告用ヘッダ
-struct RenderResultHeader {
-	int taskId;
-	int width;
-};
-
-//ローカルIPアドレスを表示する関数
+// 自分のIPを表示する関数
 void ShowMyIPAddresses() {
 	char hostname[256];
 	if(gethostname(hostname,sizeof(hostname)) == SOCKET_ERROR) return;
@@ -39,8 +33,8 @@ void ShowMyIPAddresses() {
 		cout << "Worker IP List:" << endl;
 		for(ADDRINFOA* p = res; p != NULL; p = p->ai_next) {
 			char ipStr[INET_ADDRSTRLEN];
-			struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
-			inet_ntop(AF_INET,&(ipv4->sin_addr),ipStr,sizeof(ipStr));
+			struct sockaddr_in* addr = (struct sockaddr_in*)p->ai_addr;
+			inet_ntop(AF_INET,&addr->sin_addr,ipStr,sizeof(ipStr));
 			cout << " >> " << ipStr << endl;
 		}
 		freeaddrinfo(res);
@@ -48,7 +42,6 @@ void ShowMyIPAddresses() {
 }
 
 int main() {
-	//WinSock初期化
 	WSADATA wsaData;
 	if(WSAStartup(MAKEWORD(2,2),&wsaData) != 0) return 1;
 
@@ -56,7 +49,7 @@ int main() {
 
 	while(true) {
 		string ip;
-		cout << "\n接続先サーバーIPを入力してください: ";
+		cout << "\n接続先サーバーIP: ";
 		cin >> ip;
 
 		SOCKET sock = socket(AF_INET,SOCK_STREAM,0);
@@ -65,66 +58,78 @@ int main() {
 		SOCKADDR_IN addr;
 		memset(&addr,0,sizeof(addr));
 		addr.sin_family = AF_INET;
-		addr.sin_port = htons(8888); //サーバー側のSERVER_PORTと一致させる
+		addr.sin_port = htons(8888);
 		inet_pton(AF_INET,ip.c_str(),&addr.sin_addr.s_addr);
 
-		//サーバーへの接続試行
-		cout << "接続中..." << endl;
 		if(connect(sock,(SOCKADDR*)&addr,sizeof(addr)) == SOCKET_ERROR) {
-			cout << "接続失敗。サーバーが受付状態であることを確認してください。" << endl;
+			cout << "接続失敗" << endl;
 			closesocket(sock);
 			continue;
 		}
 
-		cout << "Connection OK! サーバーが計算フェーズへ移行するのを待機します..." << endl;
+		cout << "Connected! タスク待機中..." << endl;
 
-		//計算タスク処理ループ
 		while(true) {
-			RenderTask netTask;
-			//サーバーからタスクデータが届くまで待機
-			int ret = recv(sock,(char*)&netTask,sizeof(netTask),0);
+			//recv(sock, buf, 8)のやつ
+			//ヘッダ（size:4byte + state:4byte）を受信
+			char headBuf[8];
+			int hRet = recv(sock,headBuf,8,0);
+			if(hRet <= 0) break;
 
-			if(ret <= 0) {
-				cout << "サーバーから切断されました。" << endl;
-				break;
-			}
+			//ネットワークオーダーからホストオーダーへ変換
+			int dataSize;
+			int state;
+			memcpy(&dataSize,headBuf,4);
+			memcpy(&state,headBuf + 4,4);
+			dataSize = ntohl(dataSize);
+			state = ntohl(state);
 
-			//バイトオーダーをネットワーク用からホスト用に変換
-			int tid = ntohl(netTask.taskId);
-			int sY = ntohl(netTask.startY);
-			int eY = ntohl(netTask.endY);
-			int w = ntohl(netTask.width);
+			// headerのsize分だけ本体（RenderTask）を受信
+			vector<char> bodyBuf(dataSize);
+			int bRet = recv(sock,bodyBuf.data(),dataSize,0);
+			if(bRet <= 0) break;
 
-			//割り当て確認（ACK）の返信
+			// 受信データのパース（デシリアライズ）
+			RenderTask task;
+			memcpy(&task,bodyBuf.data(),sizeof(RenderTask));
+			int tid = ntohl(task.taskId);
+			int sY  = ntohl(task.startY);
+			int eY  = ntohl(task.endY);
+			int w   = ntohl(task.width);
+
+			// 割り当てOKの返信 (ACK)
 			int ackId = htonl(tid);
 			send(sock,(char*)&ackId,sizeof(ackId),0);
+			cout << "Task #" << tid << " 受信 (State:" << state << ") 計算開始..." << endl;
 
-			cout << "タスク受信: #" << tid << " (" << sY << "-" << eY << "行) 計算中..." << endl;
-
-			//指定された幅に合わせて色データ配列を確保
+			// edupt計算処理（わからん）
 			vector<Pixel> lineData(w);
 			for(int x = 0; x < w; x++) {
-				//ここにeduptの計算処理を組み込む
-				//計算結果をPixel構造体に代入する
-				lineData[x].r = 1.0f;
-				lineData[x].g = 1.0f;
-				lineData[x].b = 1.0f;
+
+				//ここにeduptの計算結果いれればいい？
+				//lineData[x].r = (float)x / (float)w;
+				//lineData[x].g = (float)x / (float)w;
+				//lineData[x].b = (float)x / (float)w;
 			}
 
-			//計算結果の送信準備
-			RenderResultHeader resHeader;
-			resHeader.taskId = htonl(tid);
-			resHeader.width = htonl(w);
+			//Storeのぶぶん
+			// 結果送信用のバッファ作成（size + state + data）
+			int resDataSize = sizeof(Pixel) * w;
+			int totalSize = 8 + resDataSize;
+			vector<char> sendBuf(totalSize);
 
-			//ヘッダ情報の送信
-			send(sock,(char*)&resHeader,sizeof(resHeader),0);
-			//続けて1行分のピクセルデータを一括送信
-			send(sock,(char*)lineData.data(),(int)(sizeof(Pixel) * w),0);
+			int netSize = htonl(resDataSize);
+			int netState = htonl(2); // COMPLETION状態
 
-			cout << "タスク #" << tid << " の計算結果を送信しました。" << endl;
+			// バッファへの書き込み
+			memcpy(sendBuf.data(),&netSize,4);
+			memcpy(sendBuf.data() + 4,&netState,4);
+			memcpy(sendBuf.data() + 8,lineData.data(),resDataSize);
+
+			// 送信
+			send(sock,sendBuf.data(),totalSize,0);
+			cout << "Task #" << tid << " 完了報告送信済" << endl;
 		}
-
-		//接続が切れた場合はソケットを閉じて再接続待ちへ
 		closesocket(sock);
 	}
 
