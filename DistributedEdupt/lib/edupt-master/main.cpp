@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 
 #include "render.h"
 
@@ -10,5 +10,5 @@ int main(int argc, char** argv)
 
 	// 画像の大きさを得た後に、
 	// サーバ、クライアントはこいつを呼ぶ
-	edupt::render(640, 480, 16, 8);
+	//edupt::render(640, 480, 16, 8);
 }

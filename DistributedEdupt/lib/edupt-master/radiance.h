@@ -1,4 +1,4 @@
-#ifndef _RADIANCE_H_
+﻿#ifndef _RADIANCE_H_
 #define _RADIANCE_H_
 
 #include <algorithm>
@@ -24,7 +24,7 @@ namespace edupt
 		if (!intersect_scene(ray, &intersection))
 			return kBackgroundColor;
 
-		const Sphere& now_object = spheres[intersection.object_id];
+		const Sphere& now_object = sceneData[intersection.object_id];
 		const Hitpoint& hitpoint = intersection.hitpoint;
 		const Vec orienting_normal = dot(hitpoint.normal, ray.dir) < 0.0 ? hitpoint.normal : (-1.0 * hitpoint.normal); // 交差位置の法線（物体からのレイの入出を考慮）
 		// 色の反射率最大のものを得る。ロシアンルーレットで使う。

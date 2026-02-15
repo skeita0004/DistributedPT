@@ -1,4 +1,4 @@
-{
+﻿{
 
   "spheres": [
     {
@@ -55,7 +55,7 @@
       "emission": [ 0.0, 0.0, 0.0 ],
       "color": [ 0.25, 0.75, 0.25 ],
       "reflection_type": "DIFFUSE",
-      "comment": "緑球"
+      "comment": "樹脂"
     },
     {
       "radius": 16.5,
