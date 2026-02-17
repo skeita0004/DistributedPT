@@ -5,6 +5,8 @@
 #include <string>
 #include <queue> 
 
+#include "scene.h"
+
 #pragma comment(lib, "ws2_32.lib")
 
 using namespace std;

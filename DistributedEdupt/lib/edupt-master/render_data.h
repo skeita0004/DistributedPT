@@ -6,16 +6,16 @@ namespace edupt
 {
 	struct RenderData
 	{
+		RenderData();
 		RenderData(int _width,     int _height,
 				   int _tileWidth, int _tileHeight,
 				   int _offsetX,   int _offsetY,
-				   int _sample,    int _superSample,
-				   Color* _imageArray, int _imageArraySize) :
+				   int _sample,    int _superSample) :
 				   width(_width), height(_height),
 				   tileWidth(_tileWidth), tileHeight(_tileHeight),
 				   offsetX(_offsetX), offsetY(_offsetY),
-				   sample(_sample), superSample(_superSample),
-				   imageArray(_imageArray), imageArraySize(_imageArraySize) {}
+				   sample(_sample), superSample(_superSample)
+				   {}
 
 		int width;
 		int height;
@@ -28,8 +28,5 @@ namespace edupt
 
 		int sample;
 		int superSample;
-	
-		Color* imageArray;
-		int  imageArraySize;
 	};
 }

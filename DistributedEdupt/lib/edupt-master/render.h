@@ -82,10 +82,10 @@ namespace edupt
 
 						// ここで、値を一時的な配列に格納する
 						// もちろんタイル単位
-						image[image_index] = image[image_index] + accumulated_radiance;
+						image[image_index] = accumulated_radiance;
 
 						// return data
-						memcpy_s(_renderData.imageArray, _renderData.imageArraySize, image, sizeof(image));
+						
 					}
 				}
 			}
