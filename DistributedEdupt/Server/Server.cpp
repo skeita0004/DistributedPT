@@ -226,10 +226,20 @@ int main(int argc, char** argv)
 		packet.pStartY = htonl(task.startY);
 		packet.pEndY = htonl(task.endY);
 
-		send(targetClient.sock,(char*)&packet,sizeof(packet),0);
+		int sendResult = send(targetClient.sock,(char*)&packet,sizeof(packet),0);
 
-		std::cout << "[Assign] Task " << task.taskId << "(" << task.startY << " - " << task.endY
-				  << ") -> Client " << targetClient.ip << std::endl;
+		if(sendResult != SOCKET_ERROR)
+		{
+			std::cout << "[Assign] Task " << task.taskId << "(" << task.startY << " - " << task.endY
+				<< ") -> Client " << targetClient.ip << std::endl;
+		}
+		else
+		{
+			std::cout << "[Error] Failed to send task " << task.taskId << " to " << targetClient.ip << std::endl;
+		}
+
+		// タスクを送るクライアントを更新
+		clientIndex = (clientIndex + 1) % connectedClients.size();
 	}
 
 	// 受信(待機)、画像合成、形式変換(ffmpeg)
