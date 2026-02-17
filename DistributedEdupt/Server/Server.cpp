@@ -63,6 +63,7 @@ void DisplayMessage(const std::vector<ClientInfo>& clients)
     system("cls");
     std::cout << "Server Waiting..." << std::endl;
     ShowServerIP();
+	std::cout << "Server Port : " << SERVER_PORT << std::endl;
     std::cout << "------------------" << std::endl;
     
     if (clients.empty())
@@ -194,10 +195,20 @@ int main(int argc, char** argv)
 		packet.pStartY = htonl(task.startY);
 		packet.pEndY = htonl(task.endY);
 
-		send(targetClient.sock,(char*)&packet,sizeof(packet),0);
+		int sendResult = send(targetClient.sock,(char*)&packet,sizeof(packet),0);
 
-		std::cout << "[Assign] Task " << task.taskId << "(" << task.startY << " - " << task.endY
-				  << ") -> Client " << targetClient.ip << std::endl;
+		if(sendResult != SOCKET_ERROR)
+		{
+			std::cout << "[Assign] Task " << task.taskId << "(" << task.startY << " - " << task.endY
+				<< ") -> Client " << targetClient.ip << std::endl;
+		}
+		else
+		{
+			std::cout << "[Error] Failed to send task " << task.taskId << " to " << targetClient.ip << std::endl;
+		}
+
+		// タスクを送るクライアントを更新
+		clientIndex = (clientIndex + 1) % connectedClients.size();
 	}
 
     for (auto& c : connectedClients) closesocket(c.sock);
