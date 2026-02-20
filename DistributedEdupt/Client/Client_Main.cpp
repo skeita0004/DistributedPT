@@ -105,24 +105,24 @@ int main(int argc,char* argv[])
 
 	while(true)
 	{
-		string ip,portStr;
-		cout << "\n接続先サーバーIP: "; cin >> ip;
-		cout << "ポート番号: "; cin >> portStr;
+		//string ip,portStr;
+		//cout << "\n接続先サーバーIP: "; cin >> ip;
+		//cout << "ポート番号: "; cin >> portStr;
 
-		SOCKET sock = socket(AF_INET,SOCK_STREAM,0);
-		SOCKADDR_IN addr = {0};
-		addr.sin_family = AF_INET;
-		addr.sin_port = htons((unsigned short)stoi(portStr));
-		inet_pton(AF_INET,ip.c_str(),&addr.sin_addr.s_addr);
+		//SOCKET sock = socket(AF_INET,SOCK_STREAM,0);
+		//SOCKADDR_IN addr = {0};
+		//addr.sin_family = AF_INET;
+		//addr.sin_port = htons((unsigned short)stoi(portStr));
+		//inet_pton(AF_INET,ip.c_str(),&addr.sin_addr.s_addr);
 
-		if(connect(sock,(SOCKADDR*)&addr,sizeof(addr)) == SOCKET_ERROR)
-		{
-			cout << "接続失敗" << endl;
-			closesocket(sock);
-			continue;
-		}
+		//if(connect(sock,(SOCKADDR*)&addr,sizeof(addr)) == SOCKET_ERROR)
+		//{
+		//	cout << "接続失敗" << endl;
+		//	closesocket(sock);
+		//	continue;
+		//}
 
-		cout << "Connected! サーバーからのタスクを待機します。" << endl;
+		//cout << "Connected! サーバーからのタスクを待機します。" << endl;
 
 		while(true)
 		{
