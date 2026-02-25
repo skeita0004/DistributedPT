@@ -279,11 +279,9 @@ int main(int argc, char* argv[])
 
 			//Store工程、送信データの作成
 			const int IMAGE_ARRAY_SIZE{current.tile.renderData.tileWidth * current.tile.renderData.tileHeight};
-				
-			RenderResult tmp{};
-			tmp.image = new edupt::Color[IMAGE_ARRAY_SIZE];
+			const int SEND_BUF_SIZE{sizeof(edupt::Color) * IMAGE_ARRAY_SIZE + sizeof(int)};
 
-			char sendBuf[sizeof(tmp)]{};
+			char sendBuf[SEND_BUF_SIZE]{};
 
 			//int pixelDataSize = (int)(sizeof(Pixel) * current.width);
 			//vector<char> sendBuf(8 + pixelDataSize);
@@ -306,6 +304,10 @@ int main(int argc, char* argv[])
 			////memcpyで詰め込み、ポインタをずらす
 			//memcpy(_sendP, &sSize, sizeof(int));  _sendP += sizeof(int);
 			//memcpy(_sendP, &sState, sizeof(int)); _sendP += sizeof(int);
+			int index{0};
+			memcpy(&sendBuf[index], &tmp.id, sizeof(tmp.id));
+			index += sizeof(tmp.id);
+			memcpy(&sendBuf[index], &image, sizeof(image));
 
 			////最後に計算データ本体をコピー
 			//memcpy(_sendP, lineData.data(), pixelDataSize);
