@@ -2,6 +2,7 @@
 #define _RENDER_H_
 
 #include <iostream>
+#include <vector>
 
 #include "radiance.h"
 #include "ppm.h"
@@ -12,7 +13,7 @@
 
 namespace edupt
 {
-	int render(RenderData _renderData, Color* _image)
+	int render(RenderData _renderData, std::vector<Color>& _image)
 	{
 		// カメラ位置(共通)
 		const Vec camera_position = Vec(50.0, 52.0, 220.0);
@@ -32,7 +33,6 @@ namespace edupt
 		const Vec screen_center = camera_position + camera_dir * screen_dist;
 
 		// レンダリング結果格納配列(非共通)
-		_image = new Color[_renderData.tileWidth * _renderData.tileHeight];
 
 		// TODO: OpenMPの追加
 
@@ -85,12 +85,11 @@ namespace edupt
 
 						// ここで、値を一時的な配列に格納する
 						// もちろんタイル単位
-						_image[image_index] = accumulated_radiance;
+						_image[image_index] = _image[image_index] + accumulated_radiance;
 					}
 				}
 			}
 		}
-
 		// これは、サーバ側から呼ぶ(ここでは呼ばない)
 		// save_ppm_file(std::string("image.ppm"), image, _renderData.width, _renderData.height);
 		return 0;

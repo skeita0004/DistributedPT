@@ -1,5 +1,6 @@
 ﻿#include "Server.h"
 
+
 Server::Server() :
 	imageWidth_(0),
 	imageHeight_(0),
@@ -80,6 +81,7 @@ int Server::Initialize(char** _argv)
 		return -1;
 	}
 
+	ShowServerIP();
 	localClient_ = new LocalClient();
 	AcceptLocalClient();
 
@@ -111,7 +113,7 @@ void Server::AcceptLocalClient()
 #ifdef _DEBUG
 	localClientPath = "D:\\GE2A22\\home\\PG\\repos\\DistributedEdupt\\DistributedEdupt\\x64\\Debug\\Client.exe";
 	//localClientPath = "C:/Users/saito/source/repos/DistributedEdupt/DistributedEdupt/x64/Debug/Client.exe";
-	localClientPath = "C:/Users/saito/source/repos/DistributedEdupt/DistributedEdupt/x64/Debug/Client.exe";
+	//localClientPath = "C:/Users/saito/source/repos/DistributedEdupt/DistributedEdupt/x64/Debug/Client.exe";
 #endif
 
 	if (localClient_->Launch(localClientPath,
@@ -135,7 +137,16 @@ void Server::AcceptLocalClient()
 			char ipStr[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &clientAddr.sin_addr, ipStr, sizeof(ipStr));
 
-			ClientInfo info = {newSock,std::string(ipStr)};
+			ClientInfo info = {newSock,
+				std::string(ipStr),
+				std::vector<char>{},
+				std::vector<char>{},
+				0,
+				0,
+				0,
+				ClientInfo::State::HEAD_WAITING};
+			info.headBuf.resize(sizeof(uint32_t));
+
 			connectedClients_.push_back(info);
 
 			// TODO:シーンデータ送信
@@ -194,37 +205,143 @@ void Server::GetCommandLineArgs(char** _argv)
 
 void Server::RecvData()
 {
-	for (auto& client : connectedClients_)
+	for (auto client = connectedClients_.begin(); client != connectedClients_.end();)
 	{
+		// レンダリング済みタイルの要素数
 		const int IMAGE_ARRAY_SIZE{TILE_SIZE_ * TILE_SIZE_};
 
-		int index{0};
-
-		RenderResult tmp;
-		tmp.id = 0;
-		tmp.renderResult = new edupt::Color[IMAGE_ARRAY_SIZE];
-		char buf[sizeof(tmp)]{};
-
-		int ret = recv(client.sock, buf, sizeof(buf), 0);
-
-		if (ret > 0)
+		// 受信するデータ本体のサイズ
+		const int RECV_BUF_SIZE{sizeof(int) + sizeof(edupt::Color) * IMAGE_ARRAY_SIZE};
+		
+		// 合計受信データサイズ
+		int totalRet{0};
+		
+		// ヘッダ読み込み
+		if (client->state == ClientInfo::State::HEAD_WAITING or 
+			client->state == ClientInfo::State::HEAD_RECEIVENG)
 		{
+			int ret = recv(client->sock,
+						   client->headBuf.data() + client->headReceivedSize,
+						   sizeof(client->bodySize) - client->headReceivedSize,
+						   0);
+			if (ret > 0)
+			{
+				client->headReceivedSize += ret;
+				client->state = ClientInfo::State::HEAD_RECEIVENG;
+			}
+			else if (ret == 0)
+			{
+				std::cout << "クライアント: " << client->ip << "が接続を解除しました" << std::endl;
+				closesocket(client->sock);
+				client = connectedClients_.erase(client);
+				continue;
+			}
+			else
+			{
+				if (WSAGetLastError() == WSAEWOULDBLOCK)
+				{
+					++client;
+					continue;
+				}
+				else
+				{
+					// エラーメッセージ表示
+					std::cout << WSAGetLastError() << std::endl;
 
-			memcpy(&tmp.id, &buf[index], sizeof(tmp.id));
+					++client;
+					continue;
+
+				}
+			}
+
+			if (client->headReceivedSize == sizeof(client->bodySize))
+			{
+				client->state = ClientInfo::State::BODY_WAITING;
+				memcpy(&client->bodySize, client->headBuf.data(), sizeof(client->bodySize));
+				client->bodySize = ntohl(client->bodySize);
+				client->bodyBuf.resize(client->bodySize);
+			}
+		}
+
+		// ボデー読み込み
+		if (client->state == ClientInfo::State::BODY_WAITING or
+			client->state == ClientInfo::State::BODY_RECEIVENG)
+		{
+			int ret = recv(client->sock,
+			   client->bodyBuf.data() + client->bodyReceivedSize,
+			   client->bodySize - client->bodyReceivedSize,
+			   0);
+			if (ret > 0)
+			{
+				client->bodyReceivedSize += ret;
+				client->state = ClientInfo::State::BODY_RECEIVENG;
+			}
+			else if (ret == 0)
+			{
+				std::cout << "クライアント: " << client->ip << "が接続を解除しました" << std::endl;
+				closesocket(client->sock);
+				client = connectedClients_.erase(client);
+				continue;
+			}
+			else
+			{
+				if (WSAGetLastError() == WSAEWOULDBLOCK)
+				{
+					++client;
+					continue;
+				}
+				else
+				{
+					// エラーメッセージ表示
+					++client;
+					continue;
+				}
+			}
+
+			if (client->bodyReceivedSize == client->bodySize)
+			{
+				client->state = ClientInfo::State::ALL_COMPLETE;
+			}
+		}
+
+		if (client->state == ClientInfo::State::ALL_COMPLETE)
+		{
+			// ポインタ演算用
+			int index{0};
+
+			// 受信用一時オブジェクト
+			RenderResult tmp;
+			tmp.id = 0;
+
+			memcpy(&tmp.id, client->bodyBuf.data(), sizeof(tmp.id));
 			index += sizeof(tmp.id);
 
-			memcpy(&tmp.renderResult, buf, sizeof(tmp.renderResult));
+			tmp.renderResult.resize(IMAGE_ARRAY_SIZE);
+
+			// 配列のエンディアン変換処理
+			std::vector<edupt::NetVec> imageInt{};
+			imageInt.resize(IMAGE_ARRAY_SIZE);
+			memcpy(imageInt.data(), client->bodyBuf.data() + index, IMAGE_ARRAY_SIZE * sizeof(edupt::Color));
 
 			tmp.id = ntohl(tmp.id);
 
 			for (int i = 0; i < IMAGE_ARRAY_SIZE; i++)
 			{
-				tmp.renderResult[i] = tmp.renderResult[i].ChangeEndianHtoN();
+				tmp.renderResult[i] = edupt::Vec().ChangeEndianNtoH(imageInt[i]);
 			}
 
 			std::cout << "レンダリング済みデータ(id: " << tmp.id << ")を受信しました" << std::endl;
 			renderResult_.push_back(tmp);
+
+			//client->headBuf.clear();
+			//client->bodyBuf.clear();
+			client->bodySize = 0;
+			client->headReceivedSize = 0;
+			client->bodyReceivedSize = 0;
+			client->state = ClientInfo::State::HEAD_WAITING;
 		}
+
+		++client;
 	}
 }
 
@@ -244,10 +361,19 @@ void Server::JoinClient()
 		char ipStr[INET_ADDRSTRLEN];
 		inet_ntop(AF_INET, &clientAddr.sin_addr, ipStr, sizeof(ipStr));
 
-		ClientInfo info = {newSock,std::string(ipStr)};
+		ClientInfo info = {newSock,
+						   std::string(ipStr),
+						   std::vector<char>{},
+						   std::vector<char>{},
+						   0,
+						   0,
+						   0,
+						   ClientInfo::State::HEAD_WAITING};
+		info.headBuf.resize(sizeof(uint32_t));
+
 		connectedClients_.push_back(info);
 
-		// TODO:シーンデータ送信
+		// TODO:シーンデータ送信(余力があれば)
 
 		DisplayMessage(connectedClients_); // 接続があったので表示更新
 	}
@@ -256,11 +382,11 @@ void Server::JoinClient()
 void Server::PreparationSendData()
 {
 	// 処理データの用意
-	int loopNum = (int)round(imageWidth_ / (float)TILE_SIZE_) * (int)round(imageHeight_ / (float)TILE_SIZE_);
-	totalTileNum_ = loopNum;
+	int tileNumWidth  = (int)std::ceil(imageWidth_  / (float)TILE_SIZE_);
+	int tileNumHeight = (int)std::ceil(imageHeight_ / (float)TILE_SIZE_);
 
-	int tileWidth  = imageWidth_  / TILE_SIZE_;
-	int tileHeight = imageHeight_ / TILE_SIZE_;
+	int loopNum = tileNumWidth * tileNumHeight;
+	totalTileNum_ = loopNum;
 
 	for (int i = 0; i < loopNum; i++)
 	{
@@ -271,8 +397,8 @@ void Server::PreparationSendData()
 		tmp.tileWidth   = TILE_SIZE_;
 		tmp.tileHeight  = TILE_SIZE_;
 
-		tmp.offsetX     = TILE_SIZE_ * i % tileWidth;
-		tmp.offsetY     = TILE_SIZE_ * i / tileWidth;
+		tmp.offsetX     = TILE_SIZE_ * (i % tileNumWidth);
+		tmp.offsetY     = TILE_SIZE_ * (i / tileNumWidth);
 
 		tmp.sample      = sampleNum_;
 		tmp.superSample = superSampleNum_;

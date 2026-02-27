@@ -1,6 +1,9 @@
 ﻿#define WIN32_LEAN_AND_MEAN
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "Server.h"
 #include <conio.h>
+#include "ppm.h"
 
 int main(int argc, char** argv)
 {
@@ -47,6 +50,7 @@ int main(int argc, char** argv)
 	int counter{0};
 	while (true)
 	{
+		Sleep(100);
 		// 1.送信したタイルの数分、タイルを受信できるまで受信処理
 		server.RecvData();
 
@@ -54,19 +58,31 @@ int main(int argc, char** argv)
 		{
 			break;
 		}
+
+	}
+
+	int i = 0;
+	for (auto& tile : server.GetRenderResult())
+	{
+
+		edupt::save_ppm_file("out" + std::to_string(i) + ".ppm", tile.renderResult.data(), 64, 64);
+		i++;
 	}
 
 	// 2.1.が終わったら、配列を合成する
 	// CombineTiles(Server.GetRecvData());
+
+
 
 	// 3.合成した配列から、PPM画像を作成（edupt::save_ppm_file）
 	// edupt::save_ppm_file("output.ppm", image, tileWidth * tileNumX, tileHeight * tileNumY);
 
 	// 4.生成したPPM画像は引数で渡した解像度よりも少し大きいので、
 	//   0, 0 から、引数で受け取った解像度のサイズへとクロップ(ffmpeg)
+	//system("./ffmpeg -i ./out.ppm ")
 
 	// 5.PPMは扱いにくいので、pngに変換(ffmpeg)
-
+	//system("./ffmpeg.exe -i ./out.ppm ./out.png");
 	server.Release();
 
 	std::cout << "Press any key to exit." << std::endl;

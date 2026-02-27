@@ -7,6 +7,13 @@
 namespace edupt
 {
 	// 3次元ベクトル
+	struct NetVec
+	{
+		uint64_t x;
+		uint64_t y;
+		uint64_t z;
+	};
+
 	struct Vec
 	{
 		double x, y, z;
@@ -14,13 +21,24 @@ namespace edupt
 		{
 		}
 
-		Vec ChangeEndianHtoN() const
+		NetVec ChangeEndianHtoN() const
 		{
-			Vec tmp{};
+			NetVec tmp{};
 
 			tmp.x = htond(x);
 			tmp.y = htond(y);
 			tmp.z = htond(z);
+
+			return tmp;
+		}
+
+		Vec ChangeEndianNtoH(NetVec _netVec) const
+		{
+			Vec tmp{};
+
+			tmp.x = ntohd(_netVec.x);
+			tmp.y = ntohd(_netVec.y);
+			tmp.z = ntohd(_netVec.z);
 
 			return tmp;
 		}

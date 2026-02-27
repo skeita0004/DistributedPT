@@ -8,6 +8,7 @@
 #include <queue> 
 #include "render.h"
 
+
 //#include "scene.h"
 
 #pragma comment(lib, "ws2_32.lib")
@@ -110,7 +111,7 @@ int main(int argc, char* argv[])
 
 	struct RenderResult
 	{
-		int id;
+		uint32_t id;
 		edupt::Color* image;
 	};
 
@@ -256,70 +257,68 @@ int main(int argc, char* argv[])
 		{
 			JobData current = taskQueue.front();
 			taskQueue.pop();
+			const int IMAGE_ARRAY_SIZE{current.tile.renderData.tileWidth * current.tile.renderData.tileHeight};
 
+			// レンダリング処理
 			cout << "タスク #" << current.tile.id << " を処理中..." << endl;
-			edupt::Color* image{};
+			std::vector<edupt::Color> image{};
+			image.reserve(IMAGE_ARRAY_SIZE);
+			image.resize(IMAGE_ARRAY_SIZE);
 			edupt::render(current.tile.renderData, image);
 			cout << "タスク #" << current.tile.id << " の処理が完了" << endl;
 
 
-			//割り当て確認の返信(ACK)
-			//int ackId = htonl( current.taskId );
-			//send( sock, (char*)&ackId, sizeof( ackId ), 0 );
-
-
-			//edupt計算はわからんので、ここではダミーデータを生成
-			//vector<Pixel> lineData(current.width);
-			//for (int x = 0; x < current.width; x++)
-			//{
-			//	lineData[x].r = (float)x / (float)current.width;
-			//	lineData[x].g = (float)x / (float)current.width;
-			//	lineData[x].b = (float)x / (float)current.width;
-			//}
+			// 割り当て確認の返信(ACK)
+			// いらないかもしれない
 
 			//Store工程、送信データの作成
-			const int IMAGE_ARRAY_SIZE{current.tile.renderData.tileWidth * current.tile.renderData.tileHeight};
-			const int SEND_BUF_SIZE{sizeof(edupt::Color) * IMAGE_ARRAY_SIZE + sizeof(int)};
+			const size_t SEND_BUF_SIZE{sizeof(edupt::Color) * IMAGE_ARRAY_SIZE + sizeof(uint32_t) + sizeof(uint32_t)};
 
-			char sendBuf[SEND_BUF_SIZE]{};
+			std::vector<char> sendBuf{};
+			sendBuf.reserve(SEND_BUF_SIZE);
+			sendBuf.resize(SEND_BUF_SIZE);
 
-			//int pixelDataSize = (int)(sizeof(Pixel) * current.width);
-			//vector<char> sendBuf(8 + pixelDataSize);
-			//char* _sendP = sendBuf.data();
+			// エンディアン変換
+			uint32_t sendBufSize{htonl(static_cast<uint32_t>(SEND_BUF_SIZE - sizeof(uint32_t)))};
 
-			//最初にエンディアンをhostからnetに変換
-			tmp.id = htonl(tmp.id);
+			uint32_t id = htonl(current.tile.id);
 
-			if (image != nullptr)
+			std::vector<edupt::NetVec> image_int{};
+			image_int.reserve(IMAGE_ARRAY_SIZE);
+			image_int.resize(IMAGE_ARRAY_SIZE);
+
+			if (not(image.empty()))
 			{
 				for (int i = 0; i < IMAGE_ARRAY_SIZE; i++)
 				{
-					image[i] = image[i].ChangeEndianHtoN();
+					image_int[i] = image[i].ChangeEndianHtoN();
 				}
 			}
-
-			//int sSize = htonl(pixelDataSize);
-			//int sState = htonl(2);//COMPLETION
 
 			////memcpyで詰め込み、ポインタをずらす
 			//memcpy(_sendP, &sSize, sizeof(int));  _sendP += sizeof(int);
 			//memcpy(_sendP, &sState, sizeof(int)); _sendP += sizeof(int);
-			int index{0};
-			memcpy(&sendBuf[index], &tmp.id, sizeof(tmp.id));
-			index += sizeof(tmp.id);
-			memcpy(&sendBuf[index], &image, sizeof(image));
+			int offset{0};
+			memcpy(sendBuf.data(), &sendBufSize, sizeof(sendBufSize));
+			offset += sizeof(sendBufSize);
+			memcpy(sendBuf.data() + offset, &id, sizeof(id));
+			offset += sizeof(id);
+			memcpy(sendBuf.data() + offset, image_int.data(),
+				   sizeof(edupt::NetVec) * image_int.size());
 
-			////最後に計算データ本体をコピー
+			//最後に計算データ本体をコピー
 			//memcpy(_sendP, lineData.data(), pixelDataSize);
 
 			//送信実行
-			send(sock, sendBuf, sizeof(sendBuf), 0);
+			int ret = send(sock, sendBuf.data(), sendBuf.size(), 0);
 			cout << "タスク #" << current.tile.id << " の計算結果を送信しました。" << endl;
+			cout << "サイズ：" << ret << endl;
 		}
 
+		shutdown(sock, SD_BOTH);
 		closesocket(sock);
 		cout << "-------------------------------------------" << endl;
-		cout << "サーバーとの通信を終了しました。" << endl;
+		cout << "割り当てられた全ての計算が完了したため、サーバーとの通信を終了しました。" << endl;
 		cout << "別のサーバーに接続するか、再試行する場合はIPを入力してください。" << endl;
 	}
 	WSACleanup();

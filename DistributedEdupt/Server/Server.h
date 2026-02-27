@@ -22,7 +22,7 @@ public:
 	struct RenderResult
 	{
 		int id;
-		edupt::Color* renderResult;
+		std::vector<edupt::Color> renderResult;
 	};
 
 	Server();
@@ -68,6 +68,20 @@ private:
 	{
 		SOCKET sock;
 		std::string ip;
+		std::vector<char> headBuf;
+		std::vector<char> bodyBuf;
+		uint32_t bodySize;
+		size_t headReceivedSize;
+		size_t bodyReceivedSize;
+
+		enum class State
+		{
+			HEAD_WAITING,
+			HEAD_RECEIVENG,
+			BODY_WAITING,
+			BODY_RECEIVENG,
+			ALL_COMPLETE,
+		} state;
 	};
 
 	// 内部管理用
