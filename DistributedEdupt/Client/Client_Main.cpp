@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 			renderData()
 		{
 		}
-		
+
 		Tile(int _id, edupt::RenderData _renderData) :
 			id(_id),
 			renderData(_renderData)
@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
 
 			// 受信データ格納用
 			char recvRawData[sizeof(JobData)];
-	
+
 			int recvRet = recv(sock, recvRawData, sizeof(JobData), 0);
 			if (recvRet > 0)
 			{
@@ -312,7 +312,10 @@ int main(int argc, char* argv[])
 			//送信実行
 			int ret = send(sock, sendBuf.data(), sendBuf.size(), 0);
 			cout << "タスク #" << current.tile.id << " の計算結果を送信しました。" << endl;
+
+#ifdef _DEBUG
 			cout << "サイズ：" << ret << endl;
+#endif
 		}
 
 		shutdown(sock, SD_BOTH);

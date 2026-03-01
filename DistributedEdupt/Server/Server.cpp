@@ -108,12 +108,12 @@ void Server::AcceptLocalClient()
 {
 	std::cout << "ローカルクライアント起動" << std::endl;
 	// ローカルクライアント用に後でループ分ける
-	std::string localClientPath{"./Client.exe"};
+	std::string localClientPath{"./resource/Client.exe"};
+	std::string ipAddress{"127.0.0.1"};
 
 #ifdef _DEBUG
-	localClientPath = "D:\\GE2A22\\home\\PG\\repos\\DistributedEdupt\\DistributedEdupt\\x64\\Debug\\Client.exe";
-	//localClientPath = "C:/Users/saito/source/repos/DistributedEdupt/DistributedEdupt/x64/Debug/Client.exe";
-	//localClientPath = "C:/Users/saito/source/repos/DistributedEdupt/DistributedEdupt/x64/Debug/Client.exe";
+	//localClientPath = "D:\\GE2A22\\home\\PG\\repos\\DistributedEdupt\\DistributedEdupt\\x64\\Debug\\Client.exe";
+	localClientPath = "C:/Users/saito/source/repos/DistributedEdupt/DistributedEdupt/x64/Debug/Client.exe";
 #endif
 
 	if (localClient_->Launch(localClientPath,
@@ -127,35 +127,18 @@ void Server::AcceptLocalClient()
 
 	while (true)
 	{
-		SOCKADDR_IN clientAddr;
-		int addrLen = sizeof(clientAddr);
-		SOCKET newSock = accept(listenSock_, (SOCKADDR*)&clientAddr, &addrLen);
-
-		if (newSock != INVALID_SOCKET)
+		JoinClient();
+		
+		if (connectedClients_.empty() == false)
 		{
-			std::cout << "ローカルクライアントからの接続を受け付けました" << std::endl;
-			char ipStr[INET_ADDRSTRLEN];
-			inet_ntop(AF_INET, &clientAddr.sin_addr, ipStr, sizeof(ipStr));
-
-			ClientInfo info = {newSock,
-				std::string(ipStr),
-				std::vector<char>{},
-				std::vector<char>{},
-				0,
-				0,
-				0,
-				ClientInfo::State::HEAD_WAITING};
-			info.headBuf.resize(sizeof(uint32_t));
-
-			connectedClients_.push_back(info);
-
-			// TODO:シーンデータ送信
-
-			DisplayMessage(connectedClients_); // 接続があったので表示更新
-			break;
+			// 一番最初に接続するのはローカルクライアントなので、beginで問題なし
+			if (connectedClients_.begin()->ip == ipAddress)
+			{
+				std::cout << "ローカルクライアントからの接続を受け付けました" << std::endl;
+				break;
+			}
 		}
 	}
-
 }
 
 void Server::ShowServerIP()
@@ -388,6 +371,17 @@ void Server::PreparationSendData()
 	int loopNum = tileNumWidth * tileNumHeight;
 	totalTileNum_ = loopNum;
 
+	std::string ffmpegPath{"./resource/ffmpeg.exe"};
+
+#ifdef _DEBUG
+	ffmpegPath = "ffmpeg";
+#endif
+
+	ffmpegArgs_ = ffmpegPath + "-y -i ./out%d.ppm -vf \"tile=";
+	ffmpegArgs_ += std::to_string(tileNumWidth) + "x" + std::to_string(tileNumHeight);
+	ffmpegArgs_ += ",hflip,vflip,crop=" + std::to_string(imageWidth_) + ":" + std::to_string(imageHeight_);
+	ffmpegArgs_ += ":0:0\" ./render_result.png";
+
 	for (int i = 0; i < loopNum; i++)
 	{
 		edupt::RenderData tmp{};
@@ -478,6 +472,7 @@ void Server::SendData()
 	}
 }
 
+// 現在未使用
 void Server::SendDataStab()
 {
 	const int WIN_WIDTH = 800;

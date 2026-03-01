@@ -51,7 +51,8 @@ namespace edupt
 				int localX = x - _renderData.offsetX;
 
 				// 左下原点にする
-				const int image_index = (_renderData.tileHeight - localY - 1) * _renderData.tileWidth + localX;
+				//const int image_index = (_renderData.tileHeight - localY - 1) * _renderData.tileWidth + localX;
+				const int image_index = _renderData.tileWidth * localY + localX;
 
 				uint32_t seed = y * _renderData.width + x;
 				Random rnd(seed + 1);

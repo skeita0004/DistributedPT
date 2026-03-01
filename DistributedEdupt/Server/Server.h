@@ -54,6 +54,11 @@ public:
 	{
 		return renderResult_.size();
 	}
+
+	const std::string& GetffmpegArgs()
+	{
+		return ffmpegArgs_;
+	}
 private:
 	enum State : uint8_t
 	{
@@ -147,6 +152,7 @@ private:
 
 
 	inline static const uint16_t PORT_{8888};
+	inline static const std::string LOCAL_CLIENT_IP_{"127.0.0.1"};
 
 	inline static const int TILE_SIZE_{64};
 
@@ -164,6 +170,8 @@ private:
 	std::vector<ClientInfo> connectedClients_;
 	std::vector<Tile> renderData_;
 	std::vector<RenderResult> renderResult_;
+
+	std::string ffmpegArgs_;
 
 	LocalClient* localClient_;
 };
