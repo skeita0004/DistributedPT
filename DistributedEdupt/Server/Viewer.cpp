@@ -1,16 +1,20 @@
-﻿#include "LocalClient.h"
+﻿#include "Viewer.h"
 
 #include <iostream>
 
-LocalClient::LocalClient() :
+Viewer::Viewer() :
 	procInfo_()
-{}
-
-bool LocalClient::Launch(const std::string& _exePath,
-						 const std::string& _ip,
-						 const std::string& _port)
 {
-	std::string cmdLine{_exePath + " " + _ip + " " + _port};
+}
+
+bool Viewer::Launch(const std::string& _exePath,
+					const std::string& _imageWidth,
+					const std::string& _imageHeight,
+					const std::string& _tileNumX,
+					const std::string& _tileNumY,
+					const std::string& _tileSize)
+{
+	std::string cmdLine{_exePath + " " + _imageWidth + " " + _imageHeight + " " + _tileNumX + " " + _tileNumY + " " + _tileSize};
 
 	STARTUPINFOA startUpInfo{};
 	startUpInfo.cb = sizeof(startUpInfo);
@@ -21,7 +25,7 @@ bool LocalClient::Launch(const std::string& _exePath,
 	result = CreateProcessA(nullptr,
 							cmdLine.data(),
 							nullptr,
-							nullptr, 
+							nullptr,
 							FALSE,
 							creationFlags,
 							nullptr,
@@ -29,7 +33,7 @@ bool LocalClient::Launch(const std::string& _exePath,
 							&startUpInfo,
 							&procInfo_);
 
-	if(result == FALSE)
+	if (result == FALSE)
 	{
 		DWORD err = GetLastError();
 		std::cerr << "CreateProcessA failed. ERROR = " << err << std::endl;
@@ -38,14 +42,14 @@ bool LocalClient::Launch(const std::string& _exePath,
 	return result;
 }
 
-void LocalClient::Terminate()
+void Viewer::Terminate()
 {
-	if(CloseHandle(procInfo_.hProcess) == FALSE)
+	if (CloseHandle(procInfo_.hProcess) == FALSE)
 	{
 		std::cerr << "FAILED TO CloseHandle(hThread) " << "line:" << __LINE__ << std::endl;
 	}
 
-	if(CloseHandle(procInfo_.hThread) == FALSE)
+	if (CloseHandle(procInfo_.hThread) == FALSE)
 	{
 		std::cerr << "FAILED TO CloseHandle(hThread) " << "line:" << __LINE__ << std::endl;
 	}

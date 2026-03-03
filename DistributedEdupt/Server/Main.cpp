@@ -66,7 +66,6 @@ int main(int argc, char** argv)
 		{
 			break;
 		}
-
 	}
 
 	// 2.1.が終わったら、画像を合成し、リサイズ、形式変換

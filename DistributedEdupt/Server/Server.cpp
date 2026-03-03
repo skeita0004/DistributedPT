@@ -137,19 +137,27 @@ void Server::PreparationSendData()
 	int loopNum = tileNumWidth * tileNumHeight;
 	totalTileNum_ = loopNum;
 
-	std::string ffmpegPath{".\\resource\\ffmpeg.exe"};
+	ffmpegPath_ = ".\\resource\\ffmpeg.exe";
 
 #ifdef _DEBUG
-	ffmpegPath = "ffmpeg";
+	ffmpegPath_ = "ffmpeg";
 #endif
 
-	ffmpegArgs_ = ffmpegPath + " -y -i ./out%d.ppm -vf \"tile=";
+	ffmpegArgs_ = ffmpegPath_ + " -y -i ./out%d.ppm -vf \"tile=";
 	ffmpegArgs_ += std::to_string(tileNumWidth) + "x" + std::to_string(tileNumHeight);
 	ffmpegArgs_ += ",hflip,vflip,crop=" + std::to_string(imageWidth_) + ":" + std::to_string(imageHeight_);
 	ffmpegArgs_ += ":0:0\" ./render_result.png";
 
+	std::vector<edupt::Color> initImage(TILE_SIZE_ * TILE_SIZE_, 0.0);
+
 	for (int i = 0; i < loopNum; i++)
 	{
+		// レンダリング可視化用に、レンダリング前の画像を用意
+		edupt::save_ppm_file("out" + std::to_string(i) + ".ppm", initImage.data(), TILE_SIZE_, TILE_SIZE_);
+
+		std::string ppmToPng{ffmpegPath_ + " -loglevel quiet -y -i " + "out" + std::to_string(i) + ".ppm" + " out" + std::to_string(i) + ".png"};
+		system(ppmToPng.c_str());
+
 		edupt::RenderData tmp{};
 		tmp.width       = imageWidth_;
 		tmp.height      = imageHeight_;
@@ -375,6 +383,9 @@ void Server::RecvData()
 								 tmp.renderResult.data(), 
 								 TILE_SIZE_,
 								 TILE_SIZE_);
+
+			std::string ppmToPng{ffmpegPath_ + " -loglevel quiet -y -i " + "out" + std::to_string(tmp.id) + ".ppm" + " out" + std::to_string(tmp.id) + ".png"};
+			system(ppmToPng.c_str());
 
 			//client->headBuf.clear();
 			//client->bodyBuf.clear();

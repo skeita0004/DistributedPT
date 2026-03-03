@@ -94,7 +94,7 @@ private:
 	inline static const uint16_t PORT_{8888};
 	inline static const std::string LOCAL_CLIENT_IP_{"127.0.0.1"};
 	inline static const std::string LOCAL_CLIENT_EXEPATH_{"./resource/Client.exe"};
-
+	std::string ffmpegPath_;
 	inline static const int TILE_SIZE_{64};
 
 	int imageWidth_;
