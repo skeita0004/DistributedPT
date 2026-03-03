@@ -1,0 +1,10 @@
+﻿#pragma once
+
+enum State : uint8_t
+{
+	STATE_NONE,
+	STATE_QUOTA,
+	STATE_COMPLETE_SEND,
+	STATE_COMPLETION,
+	STATE_MAX
+};

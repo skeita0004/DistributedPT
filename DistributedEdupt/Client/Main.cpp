@@ -15,22 +15,14 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	// メインループ
+	Client  client{};
 	while (true)
 	{
-		// クライアント初期化
-		Client  client{};
-		if (client.Initialize() != 0)
+		// RUN_RETRY以外が返ってきたら終了
+		if (client.Run(argc, argv) != Client::RunState::RUN_RETRY)
 		{
-			std::cerr << "Initialize failed." << std::endl;
-			return -1;
-		}
-
-		if (client.Run(argc, argv) != 0)
-		{
-			std::cerr << "ERROR! client.Run() failed." << std::endl;
-			return -1;
+			break;
 		}
 	}
 

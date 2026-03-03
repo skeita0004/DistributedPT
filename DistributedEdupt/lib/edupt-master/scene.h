@@ -33,7 +33,7 @@ const std::vector<Sphere> sceneData{
 // シーンとの交差判定関数
 inline bool intersect_scene(const Ray& ray, Intersection* intersection)
 {
-	const double n = sceneData.size();
+	const size_t n = sceneData.size();
 
 	// 初期化
 	intersection->hitpoint.distance = kINF;

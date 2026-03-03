@@ -1,5 +1,9 @@
 ﻿#include "Client.h"
 
+#include "render.h"
+
+#include <cstdio>
+
 Client::Client() :
 	sock_(INVALID_SOCKET),
 	taskQueue_(),
@@ -22,30 +26,61 @@ int Client::Initialize()
 		int errorCode{WSAGetLastError()};
 		std::cerr << "socket() failed." << std::endl;
 		std::cerr << "Error code : " << errorCode << std::endl;
-		return 1;
+		return -1;
 	}
+	return 0;
 }
 
-bool Client::Run(const int _argc, const char** _argv)
+Client::RunState Client::Run(int _argc, char** _argv)
 {
+	if (Initialize() != 0)
+	{
+		std::cerr << "Initialize failed." << std::endl;
+		return Client::RunState::RUN_ERROR_INITIALIZE;
+	}
+
 	ConnectServer(_argc, _argv);
 	
 	RecvData();
 	SendData();
 
 	Release();
+
+	std::cout << "-------------------------------------------" << std::endl;
+	std::cout << "割り当てられた全ての計算が完了したため、サーバーとの通信を終了しました。" << std::endl;
+	std::cout << "別のサーバーに接続するか、再試行する場合はIPを入力してください。" << std::endl;
+	std::cout << "再試行しますか？ : Y/n" << std::endl;
+
+	switch (getchar())
+	{
+	case 'Y':
+	case 'y': 
+		system("cls");
+		return Client::RunState::RUN_RETRY;
+
+	case 'N':
+	case 'n':
+		return Client::RunState::RUN_COMPLETE;
+
+		default:
+		break;
+	}
+
+	return RunState::RUN_COMPLETE;
 }
 
 int Client::Release()
 {
 	shutdown(sock_, SD_BOTH);
 	closesocket(sock_);
-	std::cout << "-------------------------------------------" << std::endl;
-	std::cout << "割り当てられた全ての計算が完了したため、サーバーとの通信を終了しました。" << std::endl;
-	std::cout << "別のサーバーに接続するか、再試行する場合はIPを入力してください。" << std::endl;
+	sock_ = INVALID_SOCKET;
+
+	taskQueue_= {};
+
+	return 0;
 }
 
-bool Client::ConnectServer(const int _argc, const char** _argv)
+bool Client::ConnectServer(int _argc, char** _argv)
 {
 	while (true)
 	{
@@ -100,10 +135,6 @@ int Client::RecvData()
 {
 	while (true)
 	{
-
-		// 受信データのサイズを取得する
-		// 受信バッファのサイズを取得したサイズでリサイズする
-
 		// 受信データ格納用
 		char recvRawData[sizeof(JobData)];
 
@@ -126,22 +157,23 @@ int Client::RecvData()
 			memcpy(&tmp.tile, &_p[index], sizeof(tmp.tile));
 
 			//ネットワークオーダーからホストオーダー変換
-			tmp.mySize = ntohl(tmp.mySize);
-			tmp.tile.ChangeEndianNtoH();
-
-			std::cout << "タイル #" << tmp.tile.id << " 受信完了。キューへ追加（現在：" << taskQueue_.size() + 1 << "件）" << std::endl;
+			tmp.mySize = ntohll(tmp.mySize);
+			tmp.tile.id = ntohl(tmp.tile.id);
+			tmp.tile.renderData = tmp.tile.renderData.Load();
 
 			if (tmp.status == STATE_COMPLETE_SEND)
 			{
-				return;
+				return 0;
 			}
+
+			std::cout << "タイル #" << tmp.tile.id << " 受信完了。キューへ追加（現在：" << taskQueue_.size() + 1 << "件）" << std::endl;
 
 			taskQueue_.push(tmp);
 		}
 		else if (recvRet == 0)
 		{
 			std::cout << "サーバーが接続を閉じました。" << std::endl;
-			break;
+			return 0;
 		}
 	}
 }
@@ -152,7 +184,7 @@ int Client::SendData()
 	{
 		if (taskQueue_.empty())
 		{
-			return;
+			return 0;
 		}
 
 		JobData current = taskQueue_.front();
@@ -190,9 +222,7 @@ int Client::SendData()
 			}
 		}
 
-		////memcpyで詰め込み、ポインタをずらす
-		//memcpy(_sendP, &sSize, sizeof(int));  _sendP += sizeof(int);
-		//memcpy(_sendP, &sState, sizeof(int)); _sendP += sizeof(int);
+		//memcpyで詰め込み、ポインタをずらす
 		int offset{0};
 		memcpy(sendBuf.data(), &sendBufSize, sizeof(sendBufSize));
 		offset += sizeof(sendBufSize);
@@ -201,11 +231,8 @@ int Client::SendData()
 		memcpy(sendBuf.data() + offset, image_int.data(),
 			   sizeof(edupt::NetVec) * image_int.size());
 
-		//最後に計算データ本体をコピー
-		//memcpy(_sendP, lineData.data(), pixelDataSize);
-
 		//送信実行
-		int ret = send(sock_, sendBuf.data(), sendBuf.size(), 0);
+		int ret = send(sock_, sendBuf.data(), static_cast<int>(sendBuf.size()), 0);
 		std::cout << "タスク #" << current.tile.id << " の計算結果を送信しました。" << std::endl;
 
 		#ifdef _DEBUG
@@ -214,7 +241,7 @@ int Client::SendData()
 	}
 }
 
-void Client::ShowMyIPAddresses()
+void Client::ShowMyIPAddresses() const
 {
 	char hostname[256];
 	if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)

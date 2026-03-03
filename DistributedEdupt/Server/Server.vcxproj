@@ -139,6 +139,7 @@
     <ClCompile Include="Server.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ClientInfo.h" />
     <ClInclude Include="LocalClient.h" />
     <ClInclude Include="Server.h" />
   </ItemGroup>

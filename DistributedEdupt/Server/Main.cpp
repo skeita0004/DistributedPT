@@ -56,10 +56,9 @@ int main(int argc, char** argv)
 	std::cout << "全てのレンダリングデータの送信が完了しました" << std::endl;
 
 	// 受信(待機)、画像合成、形式変換(ffmpeg)
-	int counter{0};
 	while (true)
 	{
-		Sleep(100);
+		Sleep(10);
 		// 1.送信したタイルの数分、タイルを受信できるまで受信処理
 		server.RecvData();
 
@@ -70,20 +69,13 @@ int main(int argc, char** argv)
 
 	}
 
-	//int i = 0;
-	//for (auto& tile : server.GetRenderResult())
-	//{
-	//	edupt::save_ppm_file("out" + std::to_string(i) + ".ppm", tile.renderResult.data(), 64, 64);
-	//	i++;
-	//}
-
 	// 2.1.が終わったら、画像を合成し、リサイズ、形式変換
 	system(server.GetffmpegArgs().c_str());
 
-	WSACleanup();
 
 	std::cout << "Press any key to exit." << std::endl;
 	_getch();
 
+	WSACleanup();
 	return 0;
 }

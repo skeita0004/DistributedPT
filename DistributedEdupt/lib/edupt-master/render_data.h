@@ -23,14 +23,14 @@ struct RenderData
 	{
 		int32_t tmp[] =
 		{
-			htonl(width),
-			htonl(height),
-			htonl(tileWidth),
-			htonl(tileHeight),
-			htonl(offsetX),
-			htonl(offsetY),
-			htonl(sample),
-			htonl(superSample)
+			static_cast<int32_t>(htonl(width)),
+			static_cast<int32_t>(htonl(height)),
+			static_cast<int32_t>(htonl(tileWidth)),
+			static_cast<int32_t>(htonl(tileHeight)),
+			static_cast<int32_t>(htonl(offsetX)),
+			static_cast<int32_t>(htonl(offsetY)),
+			static_cast<int32_t>(htonl(sample)),
+			static_cast<int32_t>(htonl(superSample))
 		};
 
 		memcpy(_p, tmp, sizeof(tmp));
@@ -38,6 +38,8 @@ struct RenderData
 		return _p;
 	}
 
+	/// @brief 構造体の中身をネットワークエンディアンからホストエンディアンへの変換
+	/// @return 変換済み構造体
 	RenderData Load()
 	{
 		RenderData tmp{};

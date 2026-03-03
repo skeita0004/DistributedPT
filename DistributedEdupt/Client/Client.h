@@ -7,65 +7,28 @@
 
 #include <ws2tcpip.h>
 
-#include "render.h"
+#include "render_data.h"
+
+#include "../Common/JobData.h"
 
 #pragma comment(lib, "ws2_32.lib")
-
 
 class Client
 {
 public:
-	enum State : uint8_t
+	enum class RunState
 	{
-		STATE_NONE,
-		STATE_QUOTA,
-		STATE_COMPLETE_SEND,
-		STATE_COMPLETION,
-		STATE_MAX
-	};
+		RUN_ERROR_INITIALIZE = 0,
+		RUN_ERROR_CONNECT_SERVER,
+		RUN_ERROR_RECVDATA,
+		RUN_ERROR_SENDDATA,
+		RUN_ERROR_RELEASE,
 
-	// 内部管理用
-	struct Tile
-	{
-		Tile() :
-			id(0),
-			renderData()
-		{
-		}
+		RUN_RETRY,
 
-		Tile(int _id, edupt::RenderData _renderData) :
-			id(_id),
-			renderData(_renderData)
-		{
-		}
+		RUN_COMPLETE,
 
-		void ChangeEndianNtoH()
-		{
-			id = ntohl(id);
-			renderData = renderData.Load();
-		}
-
-		void ChangeEndianHtoN()
-		{
-
-		}
-
-		int id;
-		edupt::RenderData renderData;
-	};
-
-	struct JobData
-	{
-		JobData() :
-			mySize(0),
-			status(STATE_NONE),
-			tile()
-		{
-		}
-
-		int64_t mySize;
-		State status;
-		Tile tile;
+		RUN_STATE_MAX
 	};
 
 	struct RenderResult
@@ -77,17 +40,17 @@ public:
 	Client();
 	~Client();
 
-	int Initialize();
-	bool Run(const int _argc, const char** _argv);
-	int Release();
-
-	bool ConnectServer(const int _argc, const char** _argv);
-
-	int RecvData();
-	int SendData();
+	RunState Run(int _argc, char** _argv);
 
 private:
-	void ShowMyIPAddresses();
+	int Initialize();
+	int Release();
+
+	bool ConnectServer(int _argc, char** _argv);
+	int RecvData();
+	int SendData();
+	
+	void ShowMyIPAddresses() const;
 
 	/// @brief クライアントのソケット
 	SOCKET  sock_;
