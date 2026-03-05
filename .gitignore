@@ -365,3 +365,4 @@ FodyWeavers.xsd
 
 ffmpeg.exe
 *.ppm
+*.png

@@ -51,7 +51,7 @@ Client::RunState Client::Run(int _argc, char** _argv)
 	std::cout << "別のサーバーに接続するか、再試行する場合はIPを入力してください。" << std::endl;
 	std::cout << "再試行しますか？ : Y/n" << std::endl;
 
-	switch (getchar())
+	switch (getchar()) // ブロッキングしない？
 	{
 	case 'Y':
 	case 'y': 
