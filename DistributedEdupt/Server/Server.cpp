@@ -482,7 +482,7 @@ void Server::JoinLocalClient()
 	std::string ipAddress{LOCAL_CLIENT_IP_};
 	std::string portNum{std::to_string(PORT_)};
 
-	std::string cmdLine{localClientPath + ipAddress + portNum};
+	std::string cmdLine{localClientPath + " " + ipAddress + " " + portNum};
 
 #ifdef _DEBUG
 	localClientPath = ".\\..\\x64\\Debug\\Client.exe";
@@ -518,11 +518,11 @@ void Server::LaunchViewer()
 
 	std::string viewerPath{VIEWER_EXEPATH_};
 
-	std::string cmdLine{viewerPath + 
-		std::to_string(imageWidth_)+
-		std::to_string(imageHeight_) +
-		std::to_string(tileNumX_) +
-		std::to_string(tileNumY_) +
+	std::string cmdLine{viewerPath + " " +
+		std::to_string(imageWidth_)+ " " +
+		std::to_string(imageHeight_) + " " +
+		std::to_string(tileNumX_) + " " +
+		std::to_string(tileNumY_) + " " +
 		std::to_string(tileSize_)};
 
 	#ifdef _DEBUG

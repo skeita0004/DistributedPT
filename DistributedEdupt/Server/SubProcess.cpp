@@ -20,17 +20,16 @@ SubProcess::~SubProcess()
 	}
 }
 
-bool SubProcess::Launch(const std::string& _commandLine,
+bool SubProcess::Launch(std::string _commandLine,
 						DWORD _creationFlags)
 {
 	bool result{true};
 
-	std::string commandLine{_commandLine};
-
 	STARTUPINFOA startUpInfo{};
 	startUpInfo.cb = sizeof(startUpInfo);
-	result = static_cast<bool>(CreateProcessA(nullptr,
-							   commandLine.data(),
+	result = static_cast<bool>(CreateProcessA(
+							   nullptr,
+							   _commandLine.data(),
 							   nullptr,
 							   nullptr,
 							   FALSE,

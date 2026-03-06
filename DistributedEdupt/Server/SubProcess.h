@@ -10,7 +10,7 @@ public:
 
 	/// @brief ローカルクライアントの起動
 	/// @return 成功:true, 失敗:false
-	bool Launch(const std::string& _commandLine,
+	bool Launch(std::string _commandLine,
 				DWORD _creationFlags);
 
 private:
