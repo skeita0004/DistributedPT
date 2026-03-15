@@ -1,9 +1,11 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 
-#include "Server.h"
-#include "SubProcess.h"
+#include "Server.hpp"
+#include "SubProcess.hpp"
 
 #include "ppm.h"
+
+#include <conio.h>
 
 Server::Server() :
 	imageWidth_(0),
@@ -40,7 +42,59 @@ Server::~Server()
 	}
 }
 
-int Server::Initialize(char** _argv)
+RunState Server::Run(const std::vector<std::string>& _argv)
+{
+	if (Initialize(_argv) != 0)
+	{
+		std::cerr << "Initialize failed." << std::endl;
+		return RunState::FAIL;
+	}
+
+	// --- クライアント接続受付フェーズ ---
+	std::cout << "Waiting Client..." << std::endl;
+	while (true) // このループはJoinClientの中で行うようにする
+	{
+		JoinClient();
+
+		if (_kbhit() == TRUE and _getch() == '\n')
+		{
+			break;
+		}
+
+		Sleep(100);
+	}
+	std::cout << "\nStop Accept!" << std::endl;
+	std::cout << "Transitioning to the calculation phase..." << std::endl;
+
+	PreparationSendData();
+	SendData();
+
+	std::cout << "全てのレンダリングデータの送信が完了しました" << std::endl;
+
+	// 受信(待機)、画像合成、形式変換(ffmpeg)
+	while (true)
+	{
+		Sleep(10);
+		// 送信したタイルの数分、タイルを受信できるまで受信処理
+		RecvData();
+
+		if (GetRenderResult().size() >= GetTotalTileNum())
+		{
+			break;
+		}
+	}
+
+	// 2.1.が終わったら、画像を合成し、リサイズ、形式変換
+	system(GetffmpegArgs().c_str());
+
+
+	std::cout << "Press any key to exit." << std::endl;
+	_getch();
+
+	return RunState::SUCCESS;
+}
+
+int Server::Initialize(const std::vector<std::string>& _argv)
 {
 	imageWidth_ = atoi(_argv[1]);
 	imageHeight_ = atoi(_argv[2]);
