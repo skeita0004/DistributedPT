@@ -1,6 +1,7 @@
 ﻿#include "SubProcess.hpp"
 
 #include <iostream>
+#include <system_error>
 
 SubProcess::SubProcess() :
 	procInfo_()
@@ -43,6 +44,7 @@ bool SubProcess::Launch(std::string _commandLine,
 	{
 		DWORD err = GetLastError();
 		std::cerr << "CreateProcessA failed. ERROR = " << err << std::endl;
+		std::cerr << std::system_category().message(err) << std::endl;
 	}
 
 	return result;
