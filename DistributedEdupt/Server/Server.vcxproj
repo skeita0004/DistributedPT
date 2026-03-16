@@ -145,6 +145,7 @@
     <ClInclude Include="Application.hpp" />
     <ClInclude Include="Client.hpp" />
     <ClInclude Include="ClientInfo.h" />
+    <ClInclude Include="RenderResult.hpp" />
     <ClInclude Include="RunState.hpp" />
     <ClInclude Include="Server.hpp" />
     <ClInclude Include="SubProcess.hpp" />

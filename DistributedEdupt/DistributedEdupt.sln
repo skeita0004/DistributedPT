@@ -5,8 +5,6 @@ VisualStudioVersion = 17.13.35919.96
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Server", "Server\Server.vcxproj", "{8A62AD41-3853-4189-94FF-D3777095D656}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client", "Client\Client.vcxproj", "{E468EE56-CEAB-47E1-B46A-EC3898373B31}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ソリューション項目", "ソリューション項目", "{2022CB0F-8BAF-F49E-0C48-8EF4C96EC109}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -30,14 +28,6 @@ Global
 		{8A62AD41-3853-4189-94FF-D3777095D656}.Release|x64.Build.0 = Release|x64
 		{8A62AD41-3853-4189-94FF-D3777095D656}.Release|x86.ActiveCfg = Release|Win32
 		{8A62AD41-3853-4189-94FF-D3777095D656}.Release|x86.Build.0 = Release|Win32
-		{E468EE56-CEAB-47E1-B46A-EC3898373B31}.Debug|x64.ActiveCfg = Debug|x64
-		{E468EE56-CEAB-47E1-B46A-EC3898373B31}.Debug|x64.Build.0 = Debug|x64
-		{E468EE56-CEAB-47E1-B46A-EC3898373B31}.Debug|x86.ActiveCfg = Debug|Win32
-		{E468EE56-CEAB-47E1-B46A-EC3898373B31}.Debug|x86.Build.0 = Debug|Win32
-		{E468EE56-CEAB-47E1-B46A-EC3898373B31}.Release|x64.ActiveCfg = Release|x64
-		{E468EE56-CEAB-47E1-B46A-EC3898373B31}.Release|x64.Build.0 = Release|x64
-		{E468EE56-CEAB-47E1-B46A-EC3898373B31}.Release|x86.ActiveCfg = Release|Win32
-		{E468EE56-CEAB-47E1-B46A-EC3898373B31}.Release|x86.Build.0 = Release|Win32
 		{5AC9749B-63FD-4DE7-8C2F-6BB8248E6130}.Debug|x64.ActiveCfg = Debug|x64
 		{5AC9749B-63FD-4DE7-8C2F-6BB8248E6130}.Debug|x64.Build.0 = Debug|x64
 		{5AC9749B-63FD-4DE7-8C2F-6BB8248E6130}.Debug|x86.ActiveCfg = Debug|Win32

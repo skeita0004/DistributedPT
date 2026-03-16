@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 	int result = app.Run(args);
 	if (result != 0)
 	{
-		std::cerr << "app.Run failed." << std::endl;
+		std::cerr << "app.Run が異常終了。" << std::endl;
 		return -1;
 	}
 

@@ -6,6 +6,8 @@
 #include "ppm.h"
 
 #include <conio.h>
+#include <sstream>
+#include <system_error>
 
 Server::Server() :
 	imageWidth_(0),
@@ -42,16 +44,16 @@ Server::~Server()
 	}
 }
 
-RunState Server::Run(const std::vector<std::string>& _argv)
+RunState Server::Run(const std::string& _args)
 {
-	if (Initialize(_argv) != 0)
+	if (Initialize(_args) != 0)
 	{
-		std::cerr << "Initialize failed." << std::endl;
+		std::cerr << "Initialize に失敗。" << std::endl;
 		return RunState::FAIL;
 	}
 
 	// --- クライアント接続受付フェーズ ---
-	std::cout << "Waiting Client..." << std::endl;
+	std::cout << "クライアントの接続を待機中..." << std::endl;
 	while (true) // このループはJoinClientの中で行うようにする
 	{
 		JoinClient();
@@ -63,8 +65,8 @@ RunState Server::Run(const std::vector<std::string>& _argv)
 
 		Sleep(100);
 	}
-	std::cout << "\nStop Accept!" << std::endl;
-	std::cout << "Transitioning to the calculation phase..." << std::endl;
+	std::cout << "\n接続を締め切りました。" << std::endl;
+	std::cout << "計算フェーズへ移行します..." << std::endl;
 
 	PreparationSendData();
 	SendData();
@@ -78,37 +80,37 @@ RunState Server::Run(const std::vector<std::string>& _argv)
 		// 送信したタイルの数分、タイルを受信できるまで受信処理
 		RecvData();
 
-		if (GetRenderResult().size() >= GetTotalTileNum())
+		if (renderResult_.size() >= totalTileNum_)
 		{
 			break;
 		}
 	}
 
 	// 2.1.が終わったら、画像を合成し、リサイズ、形式変換
-	system(GetffmpegArgs().c_str());
+	system(ffmpegArgs_.c_str());
 
 
-	std::cout << "Press any key to exit." << std::endl;
+	std::cout << "いずれかのキーを押すと終了します。" << std::endl;
 	_getch();
 
 	return RunState::SUCCESS;
 }
 
-int Server::Initialize(const std::vector<std::string>& _argv)
+int Server::Initialize(const std::string& _args)
 {
-	imageWidth_ = atoi(_argv[1]);
-	imageHeight_ = atoi(_argv[2]);
-	superSampleNum_ = atoi(_argv[3]);
-	sampleNum_ = atoi(_argv[4]);
-	tileSize_ = atoi(_argv[5]);
+	if (ParseArgs(_args) != 0)
+	{
+		std::cerr << "エラー！不正な引数です。" << std::endl;
+	}
 
 	// リスンソケットの作成
 	listenSock_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (listenSock_ == INVALID_SOCKET)
 	{
 		int errorCode{WSAGetLastError()};
-		std::cerr << "socket() failed." << std::endl;
-		std::cerr << "Error code : " << errorCode << std::endl;
+		std::cerr << "socket() 失敗。" << std::endl;
+		std::cerr << "エラーコード : " << errorCode << std::endl;
+		std::cerr << std::system_category().message(errorCode) << std::endl;
 		return -1;
 	}
 
@@ -157,8 +159,43 @@ int Server::Initialize(const std::vector<std::string>& _argv)
 	return 0;
 }
 
-int Server::Release()
+int Server::ParseArgs(const std::string& _args)
 {
+	// 引数文字列を解析する
+	std::istringstream iss{_args};
+	std::string arg{};
+
+	std::vector<std::string> args{};
+
+	// 空白ごとに分解
+	while (std::getline(iss, arg, ' '))
+	{
+		args.push_back(arg);
+	}
+	
+	// 引数の個数チェック
+	if (args.size() < ARG_NUM_)
+	{
+		std::cerr << "ERROR! Insufficient arguments" << std::endl;
+		std::cerr << "Default num of arguments : 3, your : " << args.size() << std::endl;
+		return -1;
+	}
+
+	size_t pos = args[0].find("x");
+
+	// 区切り文字 'x' が、一つだけかチェック
+	if (pos == std::string::npos and args[0].find('x', pos + 1) == std::string::npos)
+	{
+		std::cerr << "エラー！ 解像度の指定が不正です。" << std::endl;
+		std::cerr << args[0] << std::endl;
+	}
+
+	imageWidth_  = stoi(args[0].substr(0, pos));
+	imageHeight_ = stoi(args[0].substr(pos + 1));
+
+	superSampleNum_ = stoi(args[1]);
+	sampleNum_      = stoi(args[2]);
+
 	return 0;
 }
 
@@ -194,6 +231,8 @@ void Server::JoinClient()
 void Server::PreparationSendData()
 {
 	// 処理データの用意
+	tileSize_ = 64;
+
 	tileNumX_ = (int)std::ceil(imageWidth_  / (float)tileSize_);
 	tileNumY_ = (int)std::ceil(imageHeight_ / (float)tileSize_);
 
@@ -464,70 +503,6 @@ void Server::RecvData()
 	}
 }
 
-// 現在未使用
-void Server::SendDataStab()
-{
-	const int WIN_WIDTH = 800;
-	const int WIN_HEIGHT = 600;
-	const int LINE_STEP = 4;
-
-	std::vector<RenderTask> taskTable;
-	int Counter = 0;
-	for (int y = 0; y < WIN_HEIGHT; y += LINE_STEP)
-	{
-		RenderTask t;
-		t.taskId = Counter++;
-		t.startY = y;
-		t.endY = y + LINE_STEP;
-		t.status = STATE_NONE;
-		t.ip = "";
-		taskTable.push_back(t);
-	}
-
-	std::cout << "Total Tasks: " << taskTable.size() << " created." << std::endl;
-
-	// データ送信するところ
-	size_t clientIndex = 0;
-	for (auto& task : taskTable)
-	{
-		if (connectedClients_.empty())
-		{
-			break;
-		}
-
-		ClientInfo& targetClient = connectedClients_[clientIndex];
-
-		task.status = STATE_QUOTA;
-		task.ip = targetClient.ip;
-
-		struct SendPacket
-		{
-			int pTaskId;
-			int pStartY;
-			int pEndY;
-		}packet;
-
-		packet.pTaskId = htonl(task.taskId);
-		packet.pStartY = htonl(task.startY);
-		packet.pEndY = htonl(task.endY);
-
-		int sendResult = send(targetClient.sock, (char*)&packet, sizeof(packet), 0);
-
-		if (sendResult != SOCKET_ERROR)
-		{
-			std::cout << "[Assign] Task " << task.taskId << "(" << task.startY << " - " << task.endY
-				<< ") -> Client " << targetClient.ip << std::endl;
-		}
-		else
-		{
-			std::cout << "[Error] Failed to send task " << task.taskId << " to " << targetClient.ip << std::endl;
-		}
-
-		// タスクを送るクライアントを更新
-		clientIndex = (clientIndex + 1) % connectedClients_.size();
-	}
-}
-
 void Server::JoinLocalClient()
 {
 	std::cout << "ローカルクライアント起動" << std::endl;
@@ -536,10 +511,10 @@ void Server::JoinLocalClient()
 	std::string ipAddress{LOCAL_CLIENT_IP_};
 	std::string portNum{std::to_string(PORT_)};
 
-	std::string cmdLine{localClientPath + " " + ipAddress + " " + portNum};
+	std::string cmdLine{"-c " + localClientPath + " " + ipAddress + " " + portNum};
 
 #ifdef _DEBUG
-	localClientPath = ".\\..\\x64\\Debug\\Client.exe";
+	localClientPath = ".\\..\\x64\\Debug\\Server.exe";
 #endif
 
 	if (localClient_->Launch(cmdLine, CREATE_NEW_CONSOLE) == FALSE)
@@ -580,7 +555,7 @@ void Server::LaunchViewer()
 		std::to_string(tileSize_)};
 
 	#ifdef _DEBUG
-	viewerPath = ".\\..\\x64\\Debug\\Viewer.exe"
+	viewerPath = ".\\..\\x64\\Debug\\Viewer.exe";
 	#endif
 
 	if (viewer_->Launch(cmdLine, 0) == FALSE)
@@ -611,7 +586,7 @@ void Server::ShowServerIP()
 	char hostname[256];
 	if (gethostname(hostname, sizeof(hostname)) == 0)
 	{
-		struct addrinfo hints = {}, * res = nullptr;
+		struct addrinfo hints = {}, *res = nullptr;
 		hints.ai_family = AF_INET; // IPv4
 		if (getaddrinfo(hostname, nullptr, &hints, &res) == 0)
 		{

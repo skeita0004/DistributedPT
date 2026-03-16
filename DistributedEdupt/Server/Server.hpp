@@ -13,8 +13,10 @@
 
 #include "../Common/JobData.h"
 
-#pragma comment(lib, "ws2_32.lib")
 #include "RunState.hpp"
+#include "RenderResult.hpp"
+
+#pragma comment(lib, "ws2_32.lib")
 
 class SubProcess;
 
@@ -22,19 +24,23 @@ class Server
 {
 public:
 	Server();
-	~Server();
+	~Server() noexcept;
 
-	RunState Run(const std::vector<std::string>& _argv);
+	/// @brief 
+	/// @param _argv 
+	/// @return 
+	RunState Run(const std::string& _args);
 
 private:
 	/// @brief サーバの初期化
 	/// @param _argv main関数が受け取ったコマンドライン引数
 	/// @return 正常終了: 0, 異常終了: -1
-	int Initialize(const std::vector<std::string>& _argv);
+	int Initialize(const std::string& _args);
 
-	/// @brief 解放処理
-	/// @return 正常終了: 0, 異常終了: -1
-	int Release();
+	/// @brief 引数の解析とメンバへの代入
+	/// @param _args 
+	/// @return 
+	int ParseArgs(const std::string& _args);
 
 	/// @brief クライアントの接続待機
 	void JoinClient();
@@ -48,52 +54,22 @@ private:
 	/// @brief データを受信する
 	void RecvData();
 
-	// 受信用
-	struct RenderResult
-	{
-		uint32_t id;
-		std::vector<edupt::Color> renderResult;
-	};
-
-	const std::vector<RenderResult>& GetRenderResult()
-	{
-		return renderResult_;
-	}
-
-	int GetTotalTileNum()
-	{
-		return totalTileNum_;
-	}
-
-	const std::string& GetffmpegArgs()
-	{
-		return ffmpegArgs_;
-	}
-
-	/// @brief 従来の送信処理（現在未使用）
-	void SendDataStab();
-	/// @brief テスト用スタブ
-	struct RenderTask
-	{
-		int taskId;
-		int startY;
-		int endY;
-		State status;
-		std::string ip;
-	};
-
+	/// @brief ローカルクライアントの参加を待機
 	void JoinLocalClient();
+	
+	/// @brief ビューワの起動
 	void LaunchViewer();
 
-	// サーバー自身のIPアドレスを取得する関数
+	/// @brief サーバー自身のIPアドレスを取得する関数
 	void ShowServerIP();
 
-	// 接続済みクライアント一覧の表示
+	/// @brief 接続済みクライアント一覧の表示
 	void DisplayMessage(const std::vector<ClientInfo>& clients);
 
+	inline static const size_t ARG_NUM_{3};
 	inline static const uint16_t PORT_{8888};
 	inline static const std::string LOCAL_CLIENT_IP_{"127.0.0.1"};
-	inline static const std::string LOCAL_CLIENT_EXEPATH_{"./resource/Client.exe"};
+	inline static const std::string LOCAL_CLIENT_EXEPATH_{"./resource/DPT.exe"};
 	inline static const std::string VIEWER_EXEPATH_{"./resource/Viewer.exe"};
 
 	int imageWidth_;
@@ -108,8 +84,8 @@ private:
 
 	SOCKET listenSock_;
 	SOCKADDR_IN serverAddr_;
-
 	std::vector<ClientInfo> connectedClients_;
+
 	std::vector<Tile> renderData_;
 	std::vector<RenderResult> renderResult_;
 
